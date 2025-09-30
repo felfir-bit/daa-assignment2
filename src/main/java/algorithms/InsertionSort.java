@@ -5,7 +5,7 @@ import metrics.PerformanceTracker;
 /**
  * Оптимизированная сортировка вставками с бинарным поиском
  */
-public class InsertionSort {
+public class InsertionSort implements Sortable {
     private PerformanceTracker tracker;
 
     public InsertionSort() {
