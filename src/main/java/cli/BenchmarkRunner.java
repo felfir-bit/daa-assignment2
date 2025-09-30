@@ -1,21 +1,21 @@
 package cli;
 
 import algorithms.InsertionSort;
+import algorithms.SelectionSort;
 import metrics.PerformanceTracker;
 
 import java.util.Random;
 import java.util.Scanner;
 
-/**
- * Командный интерфейс для тестирования производительности
- */
 public class BenchmarkRunner {
 
     public static void main(String[] args) {
         Scanner scanner = new Scanner(System.in);
 
-        System.out.println("=== Insertion Sort Benchmark ===");
+        System.out.println("=== Sorting Benchmark ===");
         System.out.println("📊 Results will be saved to performance_results.csv");
+
+        Object sorter = selectSorter(scanner); // выбираем сортировщик
 
         while (true) {
             printMenu();
@@ -23,16 +23,16 @@ public class BenchmarkRunner {
 
             switch (choice) {
                 case 1:
-                    testWithFixedSizes();
+                    testWithFixedSizes(sorter);
                     break;
                 case 2:
-                    testCustomArray(scanner);
+                    testCustomArray(scanner, sorter);
                     break;
                 case 3:
-                    testEdgeCases();
+                    testEdgeCases(sorter);
                     break;
                 case 4:
-                    generateFullReport();
+                    generateFullReport(sorter);
                     break;
                 case 5:
                     System.out.println("Выход...");
@@ -41,6 +41,18 @@ public class BenchmarkRunner {
                     System.out.println("Неверный выбор!");
             }
         }
+    }
+
+    private static Object selectSorter(Scanner scanner) {
+        System.out.println("Выберите сортировщик:");
+        System.out.println("1. Insertion Sort");
+        System.out.println("2. Selection Sort");
+        System.out.print("Ваш выбор: ");
+        int choice = scanner.nextInt();
+        if (choice == 2) {
+            return new SelectionSort();
+        }
+        return new InsertionSort();
     }
 
     private static void printMenu() {
@@ -53,14 +65,11 @@ public class BenchmarkRunner {
         System.out.print("Ваш выбор: ");
     }
 
-    private static void testWithFixedSizes() {
-        InsertionSort sorter = new InsertionSort();
+    private static void testWithFixedSizes(Object sorter) {
         int[] sizes = {100, 500, 1000, 5000};
-
         for (int size : sizes) {
             System.out.println("\n--- Тест размера: " + size + " ---");
 
-            // Разные типы массивов
             testArray(sorter, generateRandomArray(size), "Random_Array", size, "Random");
             testArray(sorter, generateSortedArray(size), "Sorted_Array", size, "Sorted");
             testArray(sorter, generateReverseSortedArray(size), "Reverse_Array", size, "ReverseSorted");
@@ -68,9 +77,7 @@ public class BenchmarkRunner {
         }
     }
 
-    private static void testCustomArray(Scanner scanner) {
-        InsertionSort sorter = new InsertionSort();
-
+    private static void testCustomArray(Scanner scanner, Object sorter) {
         System.out.print("Введите размер массива: ");
         int size = scanner.nextInt();
 
@@ -84,45 +91,30 @@ public class BenchmarkRunner {
         int[] array;
         String arrayType;
         switch (type) {
-            case 1:
-                array = generateRandomArray(size);
-                arrayType = "Random";
-                break;
-            case 2:
-                array = generateSortedArray(size);
-                arrayType = "Sorted";
-                break;
-            case 3:
-                array = generateReverseSortedArray(size);
-                arrayType = "ReverseSorted";
-                break;
-            case 4:
-                array = generateAlmostSortedArray(size);
-                arrayType = "AlmostSorted";
-                break;
-            default:
-                System.out.println("Неверный выбор, используется случайный массив");
-                array = generateRandomArray(size);
-                arrayType = "Random";
+            case 2: array = generateSortedArray(size); arrayType = "Sorted"; break;
+            case 3: array = generateReverseSortedArray(size); arrayType = "ReverseSorted"; break;
+            case 4: array = generateAlmostSortedArray(size); arrayType = "AlmostSorted"; break;
+            default: array = generateRandomArray(size); arrayType = "Random";
         }
 
         testArray(sorter, array, "Custom_Array", size, arrayType);
     }
 
-    private static void testEdgeCases() {
-        InsertionSort sorter = new InsertionSort();
-        System.out.println("\n--- Тест крайних случаев ---");
+    private static void testEdgeCases(Object sorter) {
+        int[][] edgeCases = {
+                new int[0],
+                new int[]{42},
+                new int[]{5, 2, 5, 3, 2, 1},
+                new int[]{1, 1, 1, 1, 1}
+        };
+        String[] names = {"Empty_Array", "Single_Element", "Array_With_Duplicates", "Array_All_Same"};
 
-        testArray(sorter, new int[0], "Empty_Array", 0, "Empty");
-        testArray(sorter, new int[]{42}, "Single_Element", 1, "SingleElement");
-        testArray(sorter, new int[]{5, 2, 5, 3, 2, 1}, "Array_With_Duplicates", 6, "WithDuplicates");
-        testArray(sorter, new int[]{1, 1, 1, 1, 1}, "Array_All_Same", 5, "AllSame");
+        for (int i = 0; i < edgeCases.length; i++) {
+            testArray(sorter, edgeCases[i], names[i], edgeCases[i].length, names[i]);
+        }
     }
 
-    private static void generateFullReport() {
-        InsertionSort sorter = new InsertionSort();
-        System.out.println("\n--- Генерация полного CSV отчета ---");
-
+    private static void generateFullReport(Object sorter) {
         int[] sizes = {100, 500, 1000, 2000, 5000};
         String[] types = {"Random", "Sorted", "ReverseSorted", "AlmostSorted"};
 
@@ -130,77 +122,92 @@ public class BenchmarkRunner {
             for (String type : types) {
                 int[] array;
                 switch (type) {
-                    case "Random": array = generateRandomArray(size); break;
                     case "Sorted": array = generateSortedArray(size); break;
                     case "ReverseSorted": array = generateReverseSortedArray(size); break;
                     case "AlmostSorted": array = generateAlmostSortedArray(size); break;
                     default: array = generateRandomArray(size);
                 }
-
                 testArray(sorter, array, "Full_Report_" + type, size, type);
             }
         }
-
         System.out.println("✅ Полный отчет сохранен в performance_results.csv");
     }
 
-    private static void testArray(InsertionSort sorter, int[] array, String testName, int size, String arrayType) {
-        sorter.resetPerformanceTracker();
-        PerformanceTracker tracker = sorter.getPerformanceTracker();
+    private static void testArray(Object sorterObj, int[] array, String testName, int size, String arrayType) {
+        PerformanceTracker tracker;
 
-        // Разогрев JVM (первый вызов всегда медленнее)
-        if (array.length > 0) {
-            sorter.sort(array.clone());
+        if (sorterObj instanceof InsertionSort sorter) {
             sorter.resetPerformanceTracker();
+            tracker = sorter.getPerformanceTracker();
+
+            if (array.length > 0) {
+                sorter.sort(array.clone());
+                sorter.resetPerformanceTracker();
+            }
+
+            tracker.startTimer();
+            int[] sorted = sorter.sort(array);
+            tracker.stopTimer();
+
+            boolean isSorted = isSorted(sorted);
+
+            System.out.println(testName + ":");
+            System.out.println("  Корректно отсортирован: " + isSorted);
+            System.out.println("  Время: " + tracker.getElapsedTime() + " ns");
+            System.out.println("  Сравнения: " + tracker.getComparisons());
+            System.out.println("  Обмены: " + tracker.getSwaps());
+            System.out.println("  Обращения к массиву: " + tracker.getArrayAccesses());
+
+            tracker.saveToCSV(testName, size, arrayType);
+
+        } else if (sorterObj instanceof SelectionSort sorter) {
+            sorter.resetPerformanceTracker();
+            tracker = sorter.getPerformanceTracker();
+
+            if (array.length > 0) {
+                sorter.sort(array.clone());
+                sorter.resetPerformanceTracker();
+            }
+
+            tracker.startTimer();
+            int[] sorted = sorter.sort(array);
+            tracker.stopTimer();
+
+            boolean isSorted = isSorted(sorted);
+
+            System.out.println(testName + ":");
+            System.out.println("  Корректно отсортирован: " + isSorted);
+            System.out.println("  Время: " + tracker.getElapsedTime() + " ns");
+            System.out.println("  Сравнения: " + tracker.getComparisons());
+            System.out.println("  Обмены: " + tracker.getSwaps());
+            System.out.println("  Обращения к массиву: " + tracker.getArrayAccesses());
+
+            tracker.saveToCSV(testName, size, arrayType);
         }
-
-        tracker.startTimer();
-        int[] sorted = sorter.sort(array);
-        tracker.stopTimer();
-
-        boolean isSorted = isSorted(sorted);
-
-        System.out.println(testName + ":");
-        System.out.println("  Корректно отсортирован: " + isSorted);
-        System.out.println("  Время: " + tracker.getElapsedTime() + " ns");
-        System.out.println("  Сравнения: " + tracker.getComparisons());
-        System.out.println("  Обмены: " + tracker.getSwaps());
-        System.out.println("  Обращения к массиву: " + tracker.getArrayAccesses());
-
-        // Сохраняем в CSV
-        tracker.saveToCSV(testName, size, arrayType);
     }
 
-    // Методы генерации массивов (оставить как были)
     private static int[] generateRandomArray(int size) {
         Random random = new Random();
         int[] array = new int[size];
-        for (int i = 0; i < size; i++) {
-            array[i] = random.nextInt(size * 10);
-        }
+        for (int i = 0; i < size; i++) array[i] = random.nextInt(size * 10);
         return array;
     }
 
     private static int[] generateSortedArray(int size) {
         int[] array = new int[size];
-        for (int i = 0; i < size; i++) {
-            array[i] = i;
-        }
+        for (int i = 0; i < size; i++) array[i] = i;
         return array;
     }
 
     private static int[] generateReverseSortedArray(int size) {
         int[] array = new int[size];
-        for (int i = 0; i < size; i++) {
-            array[i] = size - i;
-        }
+        for (int i = 0; i < size; i++) array[i] = size - i;
         return array;
     }
 
     private static int[] generateAlmostSortedArray(int size) {
         int[] array = generateSortedArray(size);
         Random random = new Random();
-        // Делаем 10% элементов неупорядоченными
         for (int i = 0; i < size * 0.1; i++) {
             int idx1 = random.nextInt(size);
             int idx2 = random.nextInt(size);
@@ -212,11 +219,7 @@ public class BenchmarkRunner {
     }
 
     private static boolean isSorted(int[] array) {
-        for (int i = 0; i < array.length - 1; i++) {
-            if (array[i] > array[i + 1]) {
-                return false;
-            }
-        }
+        for (int i = 0; i < array.length - 1; i++) if (array[i] > array[i + 1]) return false;
         return true;
     }
 }
